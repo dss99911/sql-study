@@ -1,4 +1,7 @@
 # mysql procedure
+# when too many rows exists.
+# update table with limitation of row count
+
 drop table if exists foo;
 create table foo
 (
@@ -7,10 +10,10 @@ create table foo
 )
     engine = innodb;
 
-drop procedure if exists load_foo_test_data;
+drop procedure if exists update_val;
 
 delimiter #
-create procedure load_foo_test_data()
+create procedure update_val()
 begin
 
     declare v_max int unsigned default 1000;
@@ -20,8 +23,9 @@ begin
     while v_counter < v_max
         do
             start transaction;
-            insert into foo (val) values (floor(0 + (rand() * 65535)));
-            set v_counter = v_counter + 1;
+            update foo
+                inner join (select id, val from foo where val = 0 limit 10000) cc on foo.id = cc.id
+            set foo.val = cc.val;
             commit;
         end while;
 
@@ -29,4 +33,4 @@ end #
 
 delimiter ;
 
-call load_foo_test_data();
+call update_val();
